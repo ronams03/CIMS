@@ -298,8 +298,8 @@ function ScopeCreepRow({ contract }: { contract: ScopeCreepContract }) {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <TableRow>
-        <TableCell className="font-mono text-xs">{contract.contractId}</TableCell>
-        <TableCell className="font-medium max-w-[200px] truncate">{contract.title}</TableCell>
+        <TableCell className="font-mono text-xs truncate max-w-[100px]">{contract.contractId}</TableCell>
+        <TableCell className="font-medium max-w-[180px] truncate">{contract.title}</TableCell>
         <TableCell className="text-right">{formatCurrency(contract.initialValue)}</TableCell>
         <TableCell className="text-right">{formatCurrency(contract.totalObligated)}</TableCell>
         <TableCell className={`text-right font-semibold ${growthColor}`}>
@@ -514,7 +514,7 @@ export function PatternsView() {
       {/* ── Persistent Winners + Timing Analysis ───────────────────────────── */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Persistent Winners */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <div className="flex items-center gap-2">
               <TrendingUp className="size-5 text-emerald-600" />
@@ -551,7 +551,7 @@ export function PatternsView() {
                         </Badge>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent>
+                    <AccordionContent className="min-w-0">
                       <ChartContainer
                         config={winnersChartConfig}
                         className="h-[180px] w-full"
@@ -622,7 +622,7 @@ export function PatternsView() {
         </Card>
 
         {/* Timing Analysis */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Clock className="size-5 text-emerald-600" />
@@ -684,7 +684,7 @@ export function PatternsView() {
                 <p className="text-xs font-medium text-muted-foreground mb-2">
                   Recent Q4 Contracts
                 </p>
-                <div className="max-h-40 overflow-y-auto">
+                <div className="max-h-40 overflow-y-auto overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -721,7 +721,7 @@ export function PatternsView() {
       </div>
 
       {/* ── Scope Creep Section ────────────────────────────────────────────── */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <div className="flex items-center gap-2">
             <AlertTriangle className="size-5 text-orange-600 dark:text-orange-400" />
@@ -759,16 +759,16 @@ export function PatternsView() {
               </div>
 
               {/* Scope Creep Table */}
-              <div className="max-h-96 overflow-y-auto">
+              <div className="max-h-96 overflow-y-auto overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Contract ID</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead className="text-right">Original Value</TableHead>
-                      <TableHead className="text-right">Current Value</TableHead>
-                      <TableHead className="text-right">Growth %</TableHead>
-                      <TableHead className="text-center">Mods</TableHead>
+                      <TableHead className="w-[100px]">Contract ID</TableHead>
+                      <TableHead className="max-w-[180px]">Title</TableHead>
+                      <TableHead className="text-right">Original</TableHead>
+                      <TableHead className="text-right">Current</TableHead>
+                      <TableHead className="text-right">Growth</TableHead>
+                      <TableHead className="text-center w-[60px]">Mods</TableHead>
                       <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
@@ -785,7 +785,7 @@ export function PatternsView() {
       </Card>
 
       {/* ── Award Method Distribution ──────────────────────────────────────── */}
-      <Card>
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="size-5 text-emerald-600" />
@@ -796,7 +796,7 @@ export function PatternsView() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-2 items-start">
+          <div className="grid gap-6 md:grid-cols-2 items-start min-w-0">
             {/* Pie Chart */}
             <ChartContainer config={dynamicPieConfig} className="h-[280px] w-full">
               <PieChart>

@@ -403,7 +403,7 @@ function MarketShareByCategory({
   if (categories.length === 0) return null
 
   return (
-    <Card>
+    <Card className="overflow-hidden min-w-0">
       <CardHeader>
         <div className="flex items-center gap-2">
           <BarChart3 className="size-5 text-emerald-600" />
@@ -437,7 +437,7 @@ function MarketShareByCategory({
 
             return (
               <TabsContent key={cat} value={cat}>
-                <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+                <div className="grid gap-6 lg:grid-cols-[1fr_280px] min-w-0">
                   {/* Bar Chart */}
                   <ChartContainer
                     config={marketShareChartConfig}
@@ -513,7 +513,7 @@ function WinRateRankings({ rankings }: { rankings: WinRateEntry[] }) {
   const top20 = sorted.slice(0, 20)
 
   return (
-    <Card>
+    <Card className="overflow-hidden min-w-0">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Trophy className="size-5 text-emerald-600" />
@@ -524,15 +524,15 @@ function WinRateRankings({ rankings }: { rankings: WinRateEntry[] }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="max-h-[500px] overflow-y-auto">
+        <div className="max-h-[500px] overflow-y-auto overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[50px]">Rank</TableHead>
-                <TableHead>Contractor</TableHead>
+                <TableHead className="max-w-[180px]">Contractor</TableHead>
                 <TableHead className="hidden md:table-cell">Category</TableHead>
-                <TableHead className="w-[180px]">Win Rate</TableHead>
-                <TableHead className="text-right hidden sm:table-cell">Total Value</TableHead>
+                <TableHead className="w-[140px]">Win Rate</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Value</TableHead>
                 <TableHead className="text-right hidden lg:table-cell">Contracts</TableHead>
               </TableRow>
             </TableHeader>
@@ -560,7 +560,7 @@ function WinRateRankings({ rankings }: { rankings: WinRateEntry[] }) {
                         <span className="text-sm text-muted-foreground">{rank}</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{entry.contractorName}</TableCell>
+                    <TableCell className="font-medium max-w-[180px] truncate">{entry.contractorName}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <Badge variant="outline" className="capitalize text-xs">
                         {entry.category}
@@ -612,7 +612,7 @@ function TotalContractValueByContractor({
   }))
 
   return (
-    <Card>
+    <Card className="overflow-hidden min-w-0">
       <CardHeader>
         <div className="flex items-center gap-2">
           <DollarSign className="size-5 text-emerald-600" />
@@ -719,7 +719,7 @@ function CategoryValueDistribution({ categories }: { categories: CategoryStat[] 
   })
 
   return (
-    <Card>
+    <Card className="overflow-hidden min-w-0">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Target className="size-5 text-emerald-600" />
@@ -793,7 +793,7 @@ function CompetitivePositioningMatrix({ rankings }: { rankings: WinRateEntry[] }
   })
 
   return (
-    <Card>
+    <Card className="overflow-hidden min-w-0">
       <CardHeader>
         <div className="flex items-center gap-2">
           <TrendingUp className="size-5 text-emerald-600" />

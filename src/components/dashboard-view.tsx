@@ -287,7 +287,7 @@ export function DashboardView() {
       {/* Charts Row */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Contract Value by Category */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Contract Value by Category</CardTitle>
             <CardDescription>Distribution of contract spending</CardDescription>
@@ -324,7 +324,7 @@ export function DashboardView() {
         </Card>
 
         {/* Award Method Distribution */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Award Method Distribution</CardTitle>
             <CardDescription>How contracts are awarded</CardDescription>
@@ -350,7 +350,7 @@ export function DashboardView() {
         </Card>
 
         {/* Contracts by Status */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Contracts by Status</CardTitle>
             <CardDescription>Current status breakdown</CardDescription>
@@ -379,7 +379,7 @@ export function DashboardView() {
       {/* Bottom Section: Top Contractors + Recent Contracts + Risk Signals */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Top 5 Contractors by Value */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Top 5 Contractors by Value</CardTitle>
             <CardDescription>Highest total contract value</CardDescription>
@@ -412,7 +412,7 @@ export function DashboardView() {
         </Card>
 
         {/* Risk Signal Summary */}
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <CardTitle className="text-base">Risk Signal Summary</CardTitle>
             <CardDescription>By severity and type</CardDescription>
@@ -441,12 +441,13 @@ export function DashboardView() {
       </div>
 
       {/* Recent Contracts Table */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="text-base">Recent Contracts</CardTitle>
           <CardDescription>Latest contract awards</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -463,8 +464,8 @@ export function DashboardView() {
               {data.recentContracts.map((contract) => (
                 <TableRow key={contract.id}>
                   <TableCell className="font-mono text-xs">{contract.id}</TableCell>
-                  <TableCell className="font-medium">{contract.title}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
+                  <TableCell className="font-medium max-w-[200px] truncate">{contract.title}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground max-w-[150px] truncate">
                     {contract.contractor}
                   </TableCell>
                   <TableCell className="text-right">
@@ -488,6 +489,7 @@ export function DashboardView() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

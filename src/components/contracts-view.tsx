@@ -348,40 +348,42 @@ function ContractsTableSkeleton() {
       </div>
 
       {/* Table skeleton */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="hidden lg:table-cell">Agency</TableHead>
-                <TableHead className="hidden md:table-cell">Contractor</TableHead>
-                <TableHead className="hidden sm:table-cell">Category</TableHead>
-                <TableHead className="text-right">Value</TableHead>
-                <TableHead className="hidden xl:table-cell">Award Method</TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
-                <TableHead className="hidden lg:table-cell text-center">Mods</TableHead>
-                <TableHead className="text-center">Risk</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                  <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
-                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                  <TableCell className="hidden xl:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell className="hidden lg:table-cell text-center"><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
-                  <TableCell className="text-center"><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
+          <div className="overflow-x-auto">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[80px] min-w-0">ID</TableHead>
+                  <TableHead className="min-w-0">Title</TableHead>
+                  <TableHead className="hidden lg:table-cell min-w-0">Agency</TableHead>
+                  <TableHead className="hidden md:table-cell min-w-0">Contractor</TableHead>
+                  <TableHead className="hidden sm:table-cell min-w-0">Category</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead className="hidden xl:table-cell">Award Method</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="hidden lg:table-cell text-center w-[50px]">Mods</TableHead>
+                  <TableHead className="text-center w-[50px]">Risk</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-14" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                    <TableCell className="hidden xl:table-cell"><Skeleton className="h-5 w-18" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-14" /></TableCell>
+                    <TableCell className="hidden lg:table-cell text-center"><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
+                    <TableCell className="text-center"><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -1352,11 +1354,11 @@ function ContractDetailDialog({
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">Agency</span>
-                    <p className="font-medium">{detail.agency.name} ({detail.agency.code})</p>
+                    <p className="font-medium truncate max-w-[200px]" title={detail.agency.name}>{detail.agency.name} ({detail.agency.code})</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Prime Contractor</span>
-                    <p className="font-medium">{detail.primeContractor.name}</p>
+                    <p className="font-medium truncate max-w-[200px]" title={detail.primeContractor.name}>{detail.primeContractor.name}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Category</span>
@@ -1816,101 +1818,105 @@ export function ContractsView() {
       {!data || data.contracts.length === 0 ? (
         <EmptyState hasFilters={hasFilters} onClear={clearFilters} />
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[120px]">Contract ID</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead className="hidden lg:table-cell">Agency</TableHead>
-                  <TableHead className="hidden md:table-cell">Contractor</TableHead>
-                  <TableHead className="hidden sm:table-cell">Category</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
-                  <TableHead className="hidden xl:table-cell">Award Method</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell text-center">Mods</TableHead>
-                  <TableHead className="text-center">Risk</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.contracts.map((contract) => {
-                  const awardBadge = getAwardMethodBadge(contract.awardMethod)
-                  const statusBadge = getStatusBadge(contract.status)
-                  const valuesDiffer = contract.totalObligated !== contract.initialValue
+            <div className="overflow-x-auto">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px] min-w-0">ID</TableHead>
+                    <TableHead className="min-w-0">Title</TableHead>
+                    <TableHead className="hidden lg:table-cell min-w-0">Agency</TableHead>
+                    <TableHead className="hidden md:table-cell min-w-0">Contractor</TableHead>
+                    <TableHead className="hidden sm:table-cell min-w-0">Category</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Value</TableHead>
+                    <TableHead className="hidden xl:table-cell">Award Method</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="hidden lg:table-cell text-center w-[50px]">Mods</TableHead>
+                    <TableHead className="text-center w-[50px]">Risk</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.contracts.map((contract) => {
+                    const awardBadge = getAwardMethodBadge(contract.awardMethod)
+                    const statusBadge = getStatusBadge(contract.status)
+                    const valuesDiffer = contract.totalObligated !== contract.initialValue
 
-                  return (
-                    <TableRow
-                      key={contract.id}
-                      className="cursor-pointer"
-                      onClick={() => openDetail(contract)}
-                    >
-                      <TableCell className="font-mono text-xs">
-                        {contract.contractId}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium line-clamp-1 max-w-[200px] lg:max-w-none">
-                          {contract.title}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
-                        {contract.agencyName}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                        <span className="line-clamp-1 max-w-[140px]">
-                          {contract.primeContractorName}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge
-                          variant="secondary"
-                          className={getCategoryBadgeClass(contract.category)}
-                        >
-                          {contract.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-col items-end">
-                          <span className="font-semibold">
-                            {formatShortCurrency(contract.totalObligated)}
+                    return (
+                      <TableRow
+                        key={contract.id}
+                        className="cursor-pointer"
+                        onClick={() => openDetail(contract)}
+                      >
+                        <TableCell className="font-mono text-xs max-w-[100px] truncate" title={contract.contractId}>
+                          {contract.contractId}
+                        </TableCell>
+                        <TableCell className="min-w-0">
+                          <span className="font-medium max-w-[180px] truncate block" title={contract.title}>
+                            {contract.title}
                           </span>
-                          {valuesDiffer && (
-                            <span className="text-xs text-muted-foreground">
-                              initial: {formatShortCurrency(contract.initialValue)}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground text-sm min-w-0">
+                          <span className="max-w-[150px] truncate block" title={contract.agencyName}>
+                            {contract.agencyName}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground text-sm min-w-0">
+                          <span className="max-w-[150px] truncate block" title={contract.primeContractorName}>
+                            {contract.primeContractorName}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge
+                            variant="secondary"
+                            className={getCategoryBadgeClass(contract.category)}
+                          >
+                            {contract.category}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <div className="flex flex-col items-end">
+                            <span className="font-semibold">
+                              {formatShortCurrency(contract.totalObligated)}
                             </span>
+                            {valuesDiffer && (
+                              <span className="text-xs text-muted-foreground">
+                                initial: {formatShortCurrency(contract.initialValue)}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell">
+                          <Badge variant="secondary" className={awardBadge.className}>
+                            {awardBadge.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <Badge variant="secondary" className={statusBadge.className}>
+                            {statusBadge.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-center text-muted-foreground">
+                          {contract.modificationCount}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.riskSignalCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                              <AlertTriangle className="size-4" />
+                              <span className="text-xs font-semibold">
+                                {contract.riskSignalCount}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">0</span>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        <Badge variant="secondary" className={awardBadge.className}>
-                          {awardBadge.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant="secondary" className={statusBadge.className}>
-                          {statusBadge.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-center text-muted-foreground">
-                        {contract.modificationCount}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {contract.riskSignalCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                            <AlertTriangle className="size-4" />
-                            <span className="text-xs font-semibold">
-                              {contract.riskSignalCount}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}

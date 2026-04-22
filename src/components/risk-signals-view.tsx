@@ -286,7 +286,7 @@ function SignalDistributionCharts({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Signals by Type - Horizontal Bar Chart */}
-      <Card>
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Signals by Type</CardTitle>
           <CardDescription>Distribution of risk signal categories</CardDescription>
@@ -317,7 +317,7 @@ function SignalDistributionCharts({
       </Card>
 
       {/* Signals by Severity - Donut Chart */}
-      <Card>
+      <Card className="overflow-hidden min-w-0">
         <CardHeader>
           <CardTitle className="text-base">Signals by Severity</CardTitle>
           <CardDescription>Severity distribution overview</CardDescription>
@@ -399,8 +399,8 @@ function RiskSignalCard({ signal }: { signal: RiskSignal }) {
           <Shield className="size-3" />
           {signal.contract.agencyName}
         </span>
-        <span className="flex items-center gap-1">
-          <Clock className="size-3" />
+        <span className="flex items-center gap-1 min-w-0 truncate max-w-[120px]">
+          <Clock className="size-3 shrink-0" />
           {signal.contract.contractorName}
         </span>
         <span className="flex items-center gap-1">

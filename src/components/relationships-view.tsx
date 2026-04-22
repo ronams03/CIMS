@@ -787,7 +787,7 @@ export function RelationshipsView() {
 
       {/* Network Graph + Detail Panel */}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <Card>
+        <Card className="overflow-hidden min-w-0">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Network className="size-5 text-emerald-600" />
@@ -832,7 +832,7 @@ export function RelationshipsView() {
           />
         )}
         {!selectedNodeData && (
-          <Card className="flex items-center justify-center h-64 lg:h-auto">
+          <Card className="flex items-center justify-center h-64 lg:h-auto min-w-0">
             <div className="text-center text-muted-foreground space-y-2 p-6">
               <Network className="size-10 mx-auto opacity-30" />
               <p className="text-sm">Click a node in the graph to view details</p>
@@ -857,7 +857,7 @@ export function RelationshipsView() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead className="max-w-[180px]">Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Industry</TableHead>
                   <TableHead>Risk Score</TableHead>
                   <TableHead className="hidden md:table-cell">Location</TableHead>
@@ -874,7 +874,7 @@ export function RelationshipsView() {
                     }
                     onClick={() => handleSelectNode(contractor.nodeId)}
                   >
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium max-w-[180px] truncate">
                       {contractor.contractorName}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-muted-foreground">

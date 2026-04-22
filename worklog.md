@@ -127,3 +127,44 @@ Stage Summary:
 - 4 new API route files + 2 updated route files
 - All form inputs have proper labels and validation
 - Responsive design with proper scrolling and spacing
+
+---
+Task ID: 7
+Agent: frontend-styling-expert
+Task: Fix UI overlapping issues across all views
+
+Work Log:
+- Audited all 6 view components + page.tsx for overlapping/layout issues
+- dashboard-view.tsx: Added `overflow-hidden min-w-0` to 5 Card components (3 chart row, 2 bottom section), added `max-w-[200px] truncate` to title column and `max-w-[150px] truncate` to contractor column in recent contracts table
+- patterns-view.tsx: Added `overflow-hidden min-w-0` to Persistent Winners, Timing Analysis, Award Method Distribution Cards; added `overflow-hidden` to Scope Creep Card; added `min-w-0` to AccordionContent; added `min-w-0` to award method 2-col grid
+- relationships-view.tsx: Added `overflow-hidden min-w-0` to Network Graph Card; added `min-w-0` to placeholder detail Card; added `max-w-[180px] truncate` to contractor name in risk table
+- risk-signals-view.tsx: Added `overflow-hidden min-w-0` to both chart Cards (Signals by Type, Signals by Severity); added `min-w-0 truncate max-w-[120px]` to contractor name in signal cards
+- market-view.tsx: Added `overflow-hidden min-w-0` to all 5 Card components (Market Share, Win Rate Rankings, Value by Contractor, Category Distribution, Competitive Positioning); added `min-w-0` to tab content grid `lg:grid-cols-[1fr_280px]`; added `max-w-[180px] truncate` to contractor name in rankings table
+- contracts-view.tsx: Added `truncate max-w-[200px]` with title tooltip to agency and contractor names in detail dialog; table cells already had proper truncation from prior work
+
+Stage Summary:
+- All Cards containing ChartContainer now have `overflow-hidden` to prevent chart overflow
+- All grid children containing charts now have `min-w-0` to prevent CSS grid blowout
+- Long text (contractor names, titles) now have `truncate` with `max-w-[...]` constraints
+- AccordionContent in patterns view has `min-w-0` to prevent bar chart overflow
+- No API routes, database schema, chart configs, or color scheme changes made
+
+---
+Task ID: 8
+Agent: Main
+Task: Fix horizontal table overflow across all views
+
+Work Log:
+- Dashboard: Wrapped Recent Contracts table in overflow-x-auto div, added overflow-hidden to Card, changed CardContent to p-0, added truncate with max-w to title and contractor cells
+- Patterns: Added overflow-x-auto to scope creep table and Q4 contracts table containers, reduced column header widths (Contract ID -> w-[100px], Title -> max-w-[180px], Original/Current shortened headers), added truncate to contract ID cell
+- Relationships: Added max-w-[180px] to Name table header
+- Market: Added overflow-x-auto to win rate rankings table, reduced Win Rate column from w-[180px] to w-[140px], shortened "Total Value" header to "Value"
+- Contracts: Already fixed by prior agent with overflow-hidden Card, overflow-x-auto wrapper, w-full table, min-w-0 columns, and truncate with max-w on text cells
+- Duplicate key error in patterns-view.tsx already fixed in prior session (uses `${w.contractor.id}-${wIdx}` composite key)
+
+Stage Summary:
+- All tables now have overflow-x-auto containers preventing page-level horizontal scroll
+- Text-heavy cells use truncate with max-w constraints
+- Column widths reduced where possible
+- Cards wrapping tables have overflow-hidden
+- No horizontal overflow on any view
