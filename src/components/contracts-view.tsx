@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   Search,
   ChevronLeft,
@@ -10,6 +10,10 @@ import {
   FileText,
   DollarSign,
   X,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
 } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,6 +22,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Table,
   TableBody,
@@ -37,9 +43,21 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -137,6 +155,18 @@ interface ContractDetail {
   riskSignals: RiskSignal[]
 }
 
+interface AgencyOption {
+  id: string
+  name: string
+  code: string
+}
+
+interface ContractorOption {
+  id: string
+  name: string
+  registrationId: string
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
@@ -161,6 +191,13 @@ const STATUSES = [
   { value: "completed", label: "Completed" },
   { value: "terminated", label: "Terminated" },
   { value: "modified", label: "Modified" },
+]
+
+const MODIFICATION_REASONS = [
+  { value: "scope change", label: "Scope Change" },
+  { value: "extension", label: "Extension" },
+  { value: "funding adjustment", label: "Funding Adjustment" },
+  { value: "other", label: "Other" },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -194,6 +231,12 @@ function formatDate(dateStr: string | null): string {
     day: "numeric",
     year: "numeric",
   })
+}
+
+function toDateInputValue(dateStr: string | null): string {
+  if (!dateStr) return ""
+  const date = new Date(dateStr)
+  return date.toISOString().split("T")[0]
 }
 
 function getCategoryBadgeClass(category: string): string {
@@ -378,6 +421,467 @@ function EmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () 
   )
 }
 
+// ── Create Contract Dialog ─────────────────────────────────────────────────
+
+interface CreateContractForm {
+  contractId: string
+  title: string
+  description: string
+  agencyId: string
+  primeContractorId: string
+  category: string
+  initialValue: string
+  totalObligated: string
+  awardMethod: string
+  status: string
+  awardDate: string
+  endDate: string
+}
+
+const emptyCreateForm: CreateContractForm = {
+  contractId: "",
+  title: "",
+  description: "",
+  agencyId: "",
+  primeContractorId: "",
+  category: "",
+  initialValue: "",
+  totalObligated: "",
+  awardMethod: "",
+  status: "active",
+  awardDate: "",
+  endDate: "",
+}
+
+function CreateContractDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState<CreateContractForm>(emptyCreateForm)
+
+  // Fetch agencies and contractors for the form selects
+  const { data: agenciesData } = useQuery<{ agencies: AgencyOption[] }>({
+    queryKey: ["agencies"],
+    queryFn: async () => {
+      const res = await fetch("/api/agencies")
+      if (!res.ok) throw new Error("Failed to fetch agencies")
+      return res.json()
+    },
+    enabled: open,
+  })
+
+  const { data: contractorsData } = useQuery<{ contractors: ContractorOption[] }>({
+    queryKey: ["contractors"],
+    queryFn: async () => {
+      const res = await fetch("/api/contractors")
+      if (!res.ok) throw new Error("Failed to fetch contractors")
+      return res.json()
+    },
+    enabled: open,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: async (data: CreateContractForm) => {
+      const res = await fetch("/api/contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractId: data.contractId,
+          title: data.title,
+          description: data.description,
+          agencyId: data.agencyId,
+          primeContractorId: data.primeContractorId,
+          category: data.category,
+          initialValue: parseFloat(data.initialValue),
+          totalObligated: parseFloat(data.totalObligated),
+          awardMethod: data.awardMethod,
+          status: data.status,
+          awardDate: data.awardDate,
+          endDate: data.endDate || null,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to create contract")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contracts"] })
+      toast({
+        title: "Contract created",
+        description: "The new contract has been successfully created.",
+      })
+      setForm(emptyCreateForm)
+      onOpenChange(false)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    },
+  })
+
+  const updateField = useCallback((field: keyof CreateContractForm, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }))
+  }, [])
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    createMutation.mutate(form)
+  }, [createMutation, form])
+
+  const agencies = agenciesData?.agencies ?? []
+  const contractors = contractorsData?.contractors ?? []
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create New Contract</DialogTitle>
+          <DialogDescription>
+            Fill in the details to create a new contract record.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="create-contractId">Contract ID *</Label>
+            <Input
+              id="create-contractId"
+              placeholder="e.g. CTR-2024-001"
+              value={form.contractId}
+              onChange={(e) => updateField("contractId", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="create-title">Title *</Label>
+            <Input
+              id="create-title"
+              placeholder="Contract title"
+              value={form.title}
+              onChange={(e) => updateField("title", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="create-description">Description</Label>
+            <Textarea
+              id="create-description"
+              placeholder="Optional description..."
+              value={form.description}
+              onChange={(e) => updateField("description", e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-agency">Agency *</Label>
+              <Select value={form.agencyId} onValueChange={(v) => updateField("agencyId", v)}>
+                <SelectTrigger id="create-agency">
+                  <SelectValue placeholder="Select agency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agencies.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name} ({a.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-contractor">Prime Contractor *</Label>
+              <Select value={form.primeContractorId} onValueChange={(v) => updateField("primeContractorId", v)}>
+                <SelectTrigger id="create-contractor">
+                  <SelectValue placeholder="Select contractor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contractors.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-category">Category *</Label>
+              <Select value={form.category} onValueChange={(v) => updateField("category", v)}>
+                <SelectTrigger id="create-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-awardMethod">Award Method *</Label>
+              <Select value={form.awardMethod} onValueChange={(v) => updateField("awardMethod", v)}>
+                <SelectTrigger id="create-awardMethod">
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AWARD_METHODS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-initialValue">Initial Value *</Label>
+              <Input
+                id="create-initialValue"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={form.initialValue}
+                onChange={(e) => updateField("initialValue", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-totalObligated">Total Obligated *</Label>
+              <Input
+                id="create-totalObligated"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={form.totalObligated}
+                onChange={(e) => updateField("totalObligated", e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-status">Status</Label>
+              <Select value={form.status} onValueChange={(v) => updateField("status", v)}>
+                <SelectTrigger id="create-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-awardDate">Award Date *</Label>
+              <Input
+                id="create-awardDate"
+                type="date"
+                value={form.awardDate}
+                onChange={(e) => updateField("awardDate", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-endDate">End Date</Label>
+              <Input
+                id="create-endDate"
+                type="date"
+                value={form.endDate}
+                onChange={(e) => updateField("endDate", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="gap-2"
+            >
+              {createMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              Create Contract
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Add Modification Dialog ────────────────────────────────────────────────
+
+interface ModificationForm {
+  description: string
+  valueChange: string
+  reason: string
+}
+
+function AddModificationDialog({
+  open,
+  onOpenChange,
+  contractId,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  contractId: string
+}) {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState<ModificationForm>({
+    description: "",
+    valueChange: "",
+    reason: "",
+  })
+
+  const addModMutation = useMutation({
+    mutationFn: async (data: ModificationForm) => {
+      const res = await fetch(`/api/contracts/${contractId}/modifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: data.description,
+          valueChange: parseFloat(data.valueChange),
+          reason: data.reason,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to add modification")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contracts"] })
+      queryClient.invalidateQueries({ queryKey: ["contract-detail", contractId] })
+      toast({
+        title: "Modification added",
+        description: "The modification has been successfully added.",
+      })
+      setForm({ description: "", valueChange: "", reason: "" })
+      onOpenChange(false)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    },
+  })
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    addModMutation.mutate(form)
+  }, [addModMutation, form])
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Modification</DialogTitle>
+          <DialogDescription>
+            Add a new modification to this contract.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="mod-description">Description *</Label>
+            <Input
+              id="mod-description"
+              placeholder="Modification description"
+              value={form.description}
+              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mod-valueChange">Value Change *</Label>
+            <Input
+              id="mod-valueChange"
+              type="number"
+              step="0.01"
+              placeholder="Positive or negative value"
+              value={form.valueChange}
+              onChange={(e) => setForm(prev => ({ ...prev, valueChange: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mod-reason">Reason *</Label>
+            <Select value={form.reason} onValueChange={(v) => setForm(prev => ({ ...prev, reason: v }))}>
+              <SelectTrigger id="mod-reason">
+                <SelectValue placeholder="Select reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {MODIFICATION_REASONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={addModMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={addModMutation.isPending}
+              className="gap-2"
+            >
+              {addModMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              Add Modification
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Contract Detail Dialog (with Edit/Delete) ──────────────────────────────
+
 function ContractDetailDialog({
   contract,
   open,
@@ -387,7 +891,40 @@ function ContractDetailDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { data, isLoading } = useQuery<ContractDetail>({
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [addModOpen, setAddModOpen] = useState(false)
+
+  // Edit form state
+  const [editForm, setEditForm] = useState<{
+    title: string
+    description: string
+    category: string
+    awardMethod: string
+    status: string
+    initialValue: string
+    totalObligated: string
+    awardDate: string
+    endDate: string
+    agencyId: string
+    primeContractorId: string
+  }>({
+    title: "",
+    description: "",
+    category: "",
+    awardMethod: "",
+    status: "",
+    initialValue: "",
+    totalObligated: "",
+    awardDate: "",
+    endDate: "",
+    agencyId: "",
+    primeContractorId: "",
+  })
+
+  const { data, isLoading } = useQuery<{ contract: ContractDetail }>({
     queryKey: ["contract-detail", contract?.id],
     queryFn: async () => {
       const res = await fetch(`/api/contracts/${contract!.id}`)
@@ -397,134 +934,526 @@ function ContractDetailDialog({
     enabled: open && !!contract?.id,
   })
 
+  // Fetch agencies and contractors for edit form
+  const { data: agenciesData } = useQuery<{ agencies: AgencyOption[] }>({
+    queryKey: ["agencies"],
+    queryFn: async () => {
+      const res = await fetch("/api/agencies")
+      if (!res.ok) throw new Error("Failed to fetch agencies")
+      return res.json()
+    },
+    enabled: isEditing,
+  })
+
+  const { data: contractorsData } = useQuery<{ contractors: ContractorOption[] }>({
+    queryKey: ["contractors"],
+    queryFn: async () => {
+      const res = await fetch("/api/contractors")
+      if (!res.ok) throw new Error("Failed to fetch contractors")
+      return res.json()
+    },
+    enabled: isEditing,
+  })
+
+  const detail = data?.contract
+
+  // Populate edit form when entering edit mode
+  const enterEditMode = useCallback(() => {
+    if (detail) {
+      setEditForm({
+        title: detail.title,
+        description: detail.description,
+        category: detail.category,
+        awardMethod: detail.awardMethod,
+        status: detail.status,
+        initialValue: detail.initialValue.toString(),
+        totalObligated: detail.totalObligated.toString(),
+        awardDate: toDateInputValue(detail.awardDate),
+        endDate: toDateInputValue(detail.endDate),
+        agencyId: detail.agency.id,
+        primeContractorId: detail.primeContractor.id,
+      })
+    }
+    setIsEditing(true)
+  }, [detail])
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/contracts/${contract!.id}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to delete contract")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contracts"] })
+      queryClient.invalidateQueries({ queryKey: ["contract-detail", contract?.id] })
+      toast({
+        title: "Contract deleted",
+        description: "The contract has been successfully deleted.",
+      })
+      setDeleteConfirmOpen(false)
+      onOpenChange(false)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+      setDeleteConfirmOpen(false)
+    },
+  })
+
+  // Edit mutation
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/contracts/${contract!.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editForm.title,
+          description: editForm.description,
+          category: editForm.category,
+          awardMethod: editForm.awardMethod,
+          status: editForm.status,
+          initialValue: parseFloat(editForm.initialValue),
+          totalObligated: parseFloat(editForm.totalObligated),
+          awardDate: editForm.awardDate,
+          endDate: editForm.endDate || null,
+          agencyId: editForm.agencyId,
+          primeContractorId: editForm.primeContractorId,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to update contract")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contracts"] })
+      queryClient.invalidateQueries({ queryKey: ["contract-detail", contract?.id] })
+      toast({
+        title: "Contract updated",
+        description: "The contract has been successfully updated.",
+      })
+      setIsEditing(false)
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    },
+  })
+
+  // Resolve risk signal mutation
+  const resolveMutation = useMutation({
+    mutationFn: async (signalId: string) => {
+      const res = await fetch(`/api/contracts/${contract!.id}/resolve-signal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signalId }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to resolve signal")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contracts"] })
+      queryClient.invalidateQueries({ queryKey: ["contract-detail", contract?.id] })
+      toast({
+        title: "Risk signal resolved",
+        description: "The risk signal has been marked as resolved.",
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    },
+  })
+
+  const updateEditField = useCallback((field: string, value: string) => {
+    setEditForm(prev => ({ ...prev, [field]: value }))
+  }, [])
+
+  // Wrapper for onOpenChange that resets state on close
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    if (!nextOpen) {
+      setIsEditing(false)
+      setDeleteConfirmOpen(false)
+      setAddModOpen(false)
+    }
+    onOpenChange(nextOpen)
+  }, [onOpenChange])
+
+  const agencies = agenciesData?.agencies ?? []
+  const contractors = contractorsData?.contractors ?? []
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-        {isLoading || !data ? (
-          <div className="space-y-4">
-            <DialogHeader>
-              <Skeleton className="h-6 w-64" />
-              <Skeleton className="h-4 w-40" />
-            </DialogHeader>
-            <div className="space-y-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex gap-4">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <span className="font-mono text-sm text-emerald-600">
-                  {data.contractId}
-                </span>
-                <Separator orientation="vertical" className="h-4" />
-                <span className="text-base">{data.title}</span>
-              </DialogTitle>
-              <DialogDescription>{data.description}</DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-5">
-              {/* Key details grid */}
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Agency</span>
-                  <p className="font-medium">{data.agency.name} ({data.agency.code})</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Prime Contractor</span>
-                  <p className="font-medium">{data.primeContractor.name}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Category</span>
-                  <p>
-                    <Badge variant="secondary" className={getCategoryBadgeClass(data.category)}>
-                      {data.category}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Award Method</span>
-                  <p>
-                    <Badge
-                      variant="secondary"
-                      className={getAwardMethodBadge(data.awardMethod).className}
-                    >
-                      {getAwardMethodBadge(data.awardMethod).label}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Status</span>
-                  <p>
-                    <Badge
-                      variant="secondary"
-                      className={getStatusBadge(data.status).className}
-                    >
-                      {getStatusBadge(data.status).label}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Award Date</span>
-                  <p className="font-medium">{formatDate(data.awardDate)}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">End Date</span>
-                  <p className="font-medium">{formatDate(data.endDate)}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Bid Date</span>
-                  <p className="font-medium">{formatDate(data.bidDate)}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Initial Value</span>
-                  <p className="font-medium">{formatCurrency(data.initialValue)}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Total Obligated</span>
-                  <p className="font-semibold text-emerald-600">
-                    {formatCurrency(data.totalObligated)}
-                  </p>
-                </div>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          {isLoading || !detail ? (
+            <div className="space-y-4">
+              <DialogHeader>
+                <Skeleton className="h-6 w-64" />
+                <Skeleton className="h-4 w-40" />
+              </DialogHeader>
+              <div className="space-y-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex gap-4">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                ))}
               </div>
-
-              {/* Value change indicator */}
-              {data.totalObligated !== data.initialValue && (
-                <div className="rounded-lg border p-3 text-sm">
-                  <span className="text-muted-foreground">Value change from initial: </span>
-                  <span
-                    className={
-                      data.totalObligated > data.initialValue
-                        ? "text-emerald-600 font-semibold"
-                        : "text-red-600 font-semibold"
-                    }
-                  >
-                    {data.totalObligated > data.initialValue ? "+" : ""}
-                    {formatCurrency(data.totalObligated - data.initialValue)}
+            </div>
+          ) : isEditing ? (
+            /* ── Edit Mode ── */
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-sm text-emerald-600">
+                    {detail.contractId}
                   </span>
-                  <span className="text-muted-foreground">
-                    {" "}
-                    ({((data.totalObligated - data.initialValue) / data.initialValue * 100).toFixed(1)}%)
-                  </span>
+                  <Separator orientation="vertical" className="h-4" />
+                  <span className="text-base">Edit Contract</span>
+                </DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  editMutation.mutate()
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Title *</Label>
+                  <Input
+                    id="edit-title"
+                    value={editForm.title}
+                    onChange={(e) => updateEditField("title", e.target.value)}
+                    required
+                  />
                 </div>
-              )}
 
-              {/* Modifications */}
-              {data.modifications.length > 0 && (
-                <>
-                  <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editForm.description}
+                    onChange={(e) => updateEditField("description", e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-agency">Agency</Label>
+                    <Select value={editForm.agencyId} onValueChange={(v) => updateEditField("agencyId", v)}>
+                      <SelectTrigger id="edit-agency">
+                        <SelectValue placeholder="Select agency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {agencies.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name} ({a.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-contractor">Prime Contractor</Label>
+                    <Select value={editForm.primeContractorId} onValueChange={(v) => updateEditField("primeContractorId", v)}>
+                      <SelectTrigger id="edit-contractor">
+                        <SelectValue placeholder="Select contractor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contractors.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-category">Category</Label>
+                    <Select value={editForm.category} onValueChange={(v) => updateEditField("category", v)}>
+                      <SelectTrigger id="edit-category">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-awardMethod">Award Method</Label>
+                    <Select value={editForm.awardMethod} onValueChange={(v) => updateEditField("awardMethod", v)}>
+                      <SelectTrigger id="edit-awardMethod">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AWARD_METHODS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-initialValue">Initial Value</Label>
+                    <Input
+                      id="edit-initialValue"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editForm.initialValue}
+                      onChange={(e) => updateEditField("initialValue", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-totalObligated">Total Obligated</Label>
+                    <Input
+                      id="edit-totalObligated"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={editForm.totalObligated}
+                      onChange={(e) => updateEditField("totalObligated", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-status">Status</Label>
+                    <Select value={editForm.status} onValueChange={(v) => updateEditField("status", v)}>
+                      <SelectTrigger id="edit-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUSES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>
+                            {s.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-awardDate">Award Date</Label>
+                    <Input
+                      id="edit-awardDate"
+                      type="date"
+                      value={editForm.awardDate}
+                      onChange={(e) => updateEditField("awardDate", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-endDate">End Date</Label>
+                    <Input
+                      id="edit-endDate"
+                      type="date"
+                      value={editForm.endDate}
+                      onChange={(e) => updateEditField("endDate", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditing(false)}
+                    disabled={editMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={editMutation.isPending}
+                    className="gap-2"
+                  >
+                    {editMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            </>
+          ) : (
+            /* ── View Mode ── */
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <DialogTitle className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-sm text-emerald-600">
+                        {detail.contractId}
+                      </span>
+                      <Separator orientation="vertical" className="h-4" />
+                      <span className="text-base">{detail.title}</span>
+                    </DialogTitle>
+                    <DialogDescription className="mt-1.5">{detail.description}</DialogDescription>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      onClick={() => enterEditMode()}
+                      title="Edit contract"
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      title="Delete contract"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-5">
+                {/* Key details grid */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div>
-                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <span className="text-muted-foreground">Agency</span>
+                    <p className="font-medium">{detail.agency.name} ({detail.agency.code})</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Prime Contractor</span>
+                    <p className="font-medium">{detail.primeContractor.name}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Category</span>
+                    <p>
+                      <Badge variant="secondary" className={getCategoryBadgeClass(detail.category)}>
+                        {detail.category}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Award Method</span>
+                    <p>
+                      <Badge
+                        variant="secondary"
+                        className={getAwardMethodBadge(detail.awardMethod).className}
+                      >
+                        {getAwardMethodBadge(detail.awardMethod).label}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Status</span>
+                    <p>
+                      <Badge
+                        variant="secondary"
+                        className={getStatusBadge(detail.status).className}
+                      >
+                        {getStatusBadge(detail.status).label}
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Award Date</span>
+                    <p className="font-medium">{formatDate(detail.awardDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">End Date</span>
+                    <p className="font-medium">{formatDate(detail.endDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Bid Date</span>
+                    <p className="font-medium">{formatDate(detail.bidDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Initial Value</span>
+                    <p className="font-medium">{formatCurrency(detail.initialValue)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Total Obligated</span>
+                    <p className="font-semibold text-emerald-600">
+                      {formatCurrency(detail.totalObligated)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Value change indicator */}
+                {detail.totalObligated !== detail.initialValue && (
+                  <div className="rounded-lg border p-3 text-sm">
+                    <span className="text-muted-foreground">Value change from initial: </span>
+                    <span
+                      className={
+                        detail.totalObligated > detail.initialValue
+                          ? "text-emerald-600 font-semibold"
+                          : "text-red-600 font-semibold"
+                      }
+                    >
+                      {detail.totalObligated > detail.initialValue ? "+" : ""}
+                      {formatCurrency(detail.totalObligated - detail.initialValue)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      ({((detail.totalObligated - detail.initialValue) / detail.initialValue * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                )}
+
+                {/* Modifications */}
+                <Separator />
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
                       <FileText className="size-4 text-emerald-600" />
-                      Modifications ({data.modifications.length})
+                      Modifications ({detail.modifications.length})
                     </h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setAddModOpen(true)}
+                    >
+                      <Plus className="size-3.5" />
+                      Add Modification
+                    </Button>
+                  </div>
+                  {detail.modifications.length > 0 ? (
                     <div className="space-y-2">
-                      {data.modifications.map((mod) => (
+                      {detail.modifications.map((mod) => (
                         <div
                           key={mod.id}
                           className="flex items-start justify-between rounded-lg border p-3 text-sm"
@@ -554,93 +1483,141 @@ function ContractDetailDialog({
                         </div>
                       ))}
                     </div>
-                  </div>
-                </>
-              )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No modifications yet.</p>
+                  )}
+                </div>
 
-              {/* Subcontractors */}
-              {data.subcontractors.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                      <DollarSign className="size-4 text-emerald-600" />
-                      Subcontractors ({data.subcontractors.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {data.subcontractors.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="flex items-center justify-between rounded-lg border p-3 text-sm"
-                        >
-                          <div>
-                            <p className="font-medium">{sub.contractor.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              ID: {sub.contractor.registrationId}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {sub.description}
-                            </p>
-                          </div>
-                          <span className="font-semibold ml-4 whitespace-nowrap">
-                            {formatCurrency(sub.subValue)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Risk Signals */}
-              {data.riskSignals.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                      <AlertTriangle className="size-4 text-orange-500" />
-                      Risk Signals ({data.riskSignals.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {data.riskSignals.map((signal) => (
-                        <div
-                          key={signal.id}
-                          className="flex items-start gap-3 rounded-lg border border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-900/10 p-3 text-sm"
-                        >
-                          <AlertTriangle className="size-4 text-orange-500 mt-0.5 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge
-                                variant="secondary"
-                                className={getSeverityBadge(signal.severity).className}
-                              >
-                                {getSeverityBadge(signal.severity).label}
-                              </Badge>
-                              <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                                {signal.signalType}
-                              </Badge>
-                              {signal.isResolved && (
-                                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                  Resolved
-                                </Badge>
-                              )}
+                {/* Subcontractors */}
+                {detail.subcontractors.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <DollarSign className="size-4 text-emerald-600" />
+                        Subcontractors ({detail.subcontractors.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {detail.subcontractors.map((sub) => (
+                          <div
+                            key={sub.id}
+                            className="flex items-center justify-between rounded-lg border p-3 text-sm"
+                          >
+                            <div>
+                              <p className="font-medium">{sub.contractor.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                ID: {sub.contractor.registrationId}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {sub.description}
+                              </p>
                             </div>
-                            <p>{signal.description}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Detected {formatDate(signal.createdAt)}
-                            </p>
+                            <span className="font-semibold ml-4 whitespace-nowrap">
+                              {formatCurrency(sub.subValue)}
+                            </span>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+                  </>
+                )}
+
+                {/* Risk Signals */}
+                {(detail.riskSignals.length > 0) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                        <AlertTriangle className="size-4 text-orange-500" />
+                        Risk Signals ({detail.riskSignals.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {detail.riskSignals.map((signal) => (
+                          <div
+                            key={signal.id}
+                            className="flex items-start gap-3 rounded-lg border border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-900/10 p-3 text-sm"
+                          >
+                            <AlertTriangle className="size-4 text-orange-500 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <Badge
+                                  variant="secondary"
+                                  className={getSeverityBadge(signal.severity).className}
+                                >
+                                  {getSeverityBadge(signal.severity).label}
+                                </Badge>
+                                <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                                  {signal.signalType}
+                                </Badge>
+                                {signal.isResolved && (
+                                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    Resolved
+                                  </Badge>
+                                )}
+                              </div>
+                              <p>{signal.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Detected {formatDate(signal.createdAt)}
+                              </p>
+                            </div>
+                            {!signal.isResolved && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0 text-xs h-7"
+                                onClick={() => resolveMutation.mutate(signal.id)}
+                                disabled={resolveMutation.isPending}
+                              >
+                                {resolveMutation.isPending ? (
+                                  <Loader2 className="size-3 animate-spin mr-1" />
+                                ) : null}
+                                Resolve
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation AlertDialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contract</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete contract <strong>{detail?.contractId}</strong>? This action cannot be undone and will also remove all associated modifications, subcontractor links, and risk signals.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+            >
+              {deleteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Modification Dialog */}
+      {contract && (
+        <AddModificationDialog
+          open={addModOpen}
+          onOpenChange={setAddModOpen}
+          contractId={contract.id}
+        />
+      )}
+    </>
   )
 }
 
@@ -658,6 +1635,9 @@ export function ContractsView() {
   // Detail dialog state
   const [selectedContract, setSelectedContract] = useState<ContractListItem | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+
+  // Create dialog state
+  const [createOpen, setCreateOpen] = useState(false)
 
   // Debounce search input
   useEffect(() => {
@@ -790,12 +1770,17 @@ export function ContractsView() {
               ))}
             </SelectContent>
           </Select>
+
+          <Button className="gap-2" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            New Contract
+          </Button>
         </div>
       </div>
 
       {/* Stats Row */}
       {data && (
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
           <span>
             <span className="font-semibold text-foreground">
               {data.pagination.totalCount}
@@ -967,6 +1952,12 @@ export function ContractsView() {
         contract={selectedContract}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+      />
+
+      {/* Create Contract Dialog */}
+      <CreateContractDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
       />
     </div>
   )

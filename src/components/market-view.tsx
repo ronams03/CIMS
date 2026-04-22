@@ -481,8 +481,8 @@ function MarketShareByCategory({
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold text-muted-foreground">Win Rate</h4>
                     <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-                      {entries.slice(0, 8).map((e) => (
-                        <div key={e.contractor.id} className="space-y-1">
+                      {entries.slice(0, 8).map((e, eIdx) => (
+                        <div key={`${e.contractor.id}-${eIdx}`} className="space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium truncate max-w-[160px]">
                               {e.contractor.name}

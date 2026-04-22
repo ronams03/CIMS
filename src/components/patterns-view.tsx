@@ -596,9 +596,9 @@ export function PatternsView() {
                       </ChartContainer>
                       {/* Contractor details list */}
                       <div className="mt-3 space-y-1.5">
-                        {winners.map((w) => (
+                        {winners.map((w, wIdx) => (
                           <div
-                            key={w.contractor.id}
+                            key={`${w.contractor.id}-${wIdx}`}
                             className="flex items-center justify-between text-xs py-1"
                           >
                             <span className="text-muted-foreground truncate max-w-[160px]">

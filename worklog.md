@@ -78,3 +78,52 @@ Stage Summary:
 - All 6 views fully implemented with real data from APIs
 - Teal/emerald color scheme throughout
 - Responsive design with loading skeletons
+
+---
+Task ID: 5
+Agent: full-stack-developer
+Task: Add CRUD API routes for contracts
+
+Work Log:
+- Added POST handler to /api/contracts/route.ts for creating contracts with full validation (required fields, enum validation, duplicate contractId check, agency/contractor existence verification). Returns 201 with agency and primeContractor included, 400 for validation errors, 409 for duplicate contractId.
+- Added PATCH handler to /api/contracts/[id]/route.ts for partial updates with enum validation and FK verification. Returns 404 if contract not found.
+- Added DELETE handler to /api/contracts/[id]/route.ts using $transaction to delete risk signals, subcontractor links, modifications, and contract in order. Returns 404 if not found.
+- Created /api/contracts/[id]/modifications/route.ts with POST handler that auto-increments modNumber based on existing modifications and updates contract totalObligated in a transaction.
+- Created /api/contracts/[id]/resolve-signal/route.ts with POST handler that validates signal belongs to contract and sets isResolved = true.
+- All existing GET handlers preserved unchanged.
+- Lint passes with no errors.
+
+Stage Summary:
+- 5 new API handlers added across 4 route files
+- Full CRUD support for contracts with proper validation and error handling
+- Transactional operations for delete and modification creation
+
+---
+Task ID: 6
+Agent: full-stack-developer
+Task: Build complete CRUD UI for contracts view
+
+Work Log:
+- Created /api/agencies/route.ts - GET endpoint returning all agencies (id, name, code)
+- Created /api/contractors/route.ts - GET endpoint returning all contractors (id, name, registrationId)
+- Updated /api/contracts/[id]/route.ts - Added PATCH (partial update with validation) and DELETE (with cascading removal of related records)
+- Created /api/contracts/[id]/modifications/route.ts - POST handler for adding modifications with auto-incrementing modNumber and totalObligated update
+- Created /api/contracts/[id]/resolve-signal/route.ts - POST handler for resolving risk signals
+- Updated contracts-view.tsx with full CRUD functionality:
+  1. "New Contract" button in search/filter bar that opens create dialog
+  2. Create Contract Dialog with full form (contractId, title, description, agency select, contractor select, category, initial value, total obligated, award method, status, award date, end date) - POSTs to /api/contracts
+  3. Edit & Delete in Contract Detail Dialog - Edit button switches to form mode with pre-filled values, Delete button shows AlertDialog confirmation
+  4. "Add Modification" button in modifications section with description, value change, and reason fields
+  5. "Resolve" button next to each unresolved risk signal
+  6. Fixed layout: max-h-[85vh] with overflow-y-auto on dialogs, flex-wrap on header buttons, space-y-4 on forms
+- All mutations use useMutation with proper query invalidation (["contracts"] and ["contract-detail", id])
+- Toast notifications for success/error on all mutations
+- Loading states with spinner on mutation buttons
+- Fixed lint errors: replaced setState-in-effect patterns with callback-based state management
+- Lint passes with zero errors
+
+Stage Summary:
+- Full CRUD UI implemented for contracts: Create, Read, Update, Delete
+- 4 new API route files + 2 updated route files
+- All form inputs have proper labels and validation
+- Responsive design with proper scrolling and spacing
