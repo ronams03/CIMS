@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Agency {
+  id          String     @id @default(cuid())
+  name        String
+  code        String     @unique
+  level       String     // federal, state, municipal
+  category    String     // defense, health, infrastructure, IT, etc.
+  budget      Float      // annual budget in millions
+  contracts   Contract[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Contractor {
+  id              String              @id @default(cuid())
+  name            String
+  registrationId  String              @unique
+  type            String              // corporation, LLC, sole proprietorship
+  industry        String
+  city            String
+  state           String
+  contracts       Contract[]
+  subcontractorIn SubcontractorLink[]
+  marketShares    MarketShare[]
+  riskScore       Float               @default(0) // 0-100
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model Contract {
+  id                String              @id @default(cuid())
+  contractId        String              @unique
+  title             String
+  description       String
+  agencyId          String
+  agency            Agency              @relation(fields: [agencyId], references: [id])
+  primeContractorId String
+  primeContractor   Contractor          @relation(fields: [primeContractorId], references: [id])
+  category          String              // IT, defense, infrastructure, consulting, etc.
+  initialValue      Float               // original contract value
+  totalObligated    Float               // total obligated value
+  awardMethod       String              // competitive, sole-source, emergency, etc.
+  status            String              // active, completed, terminated, modified
+  bidDate           DateTime?
+  awardDate         DateTime
+  endDate           DateTime?
+  modifications     ContractModification[]
+  subcontractors    SubcontractorLink[]
+  riskSignals       RiskSignal[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model ContractModification {
+  id          String   @id @default(cuid())
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id])
+  modNumber   Int
+  description String
+  valueChange Float    // positive = increase, negative = decrease
+  modDate     DateTime
+  reason      String   // scope change, extension, funding adjustment, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SubcontractorLink {
+  id             String     @id @default(cuid())
+  contractId     String
+  contract       Contract   @relation(fields: [contractId], references: [id])
+  contractorId   String
+  contractor     Contractor @relation(fields: [contractorId], references: [id])
+  subValue       Float
+  description    String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model RiskSignal {
+  id          String   @id @default(cuid())
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id])
+  signalType  String   // sole-source, timing-irregularity, scope-creep, concentration, etc.
+  severity    String   // low, medium, high, critical
+  description String
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MarketShare {
+  id           String   @id @default(cuid())
+  category     String
+  contractorId String
+  contractor   Contractor @relation(fields: [contractorId], references: [id])
+  winRate      Float    // percentage
+  totalValue   Float    // total contract value in category
+  contractCount Int
+  period       String   // e.g., "2024", "Q1-2024"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
