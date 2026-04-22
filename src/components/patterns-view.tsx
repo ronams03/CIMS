@@ -298,11 +298,11 @@ function ScopeCreepRow({ contract }: { contract: ScopeCreepContract }) {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <TableRow>
-        <TableCell className="font-mono text-xs truncate max-w-[100px]">{contract.contractId}</TableCell>
-        <TableCell className="font-medium max-w-[180px] truncate">{contract.title}</TableCell>
-        <TableCell className="text-right">{formatCurrency(contract.initialValue)}</TableCell>
-        <TableCell className="text-right">{formatCurrency(contract.totalObligated)}</TableCell>
-        <TableCell className={`text-right font-semibold ${growthColor}`}>
+        <TableCell className="font-mono text-xs truncate">{contract.contractId}</TableCell>
+        <TableCell className="font-medium truncate">{contract.title}</TableCell>
+        <TableCell className="text-right whitespace-nowrap">{formatCurrency(contract.initialValue)}</TableCell>
+        <TableCell className="text-right whitespace-nowrap">{formatCurrency(contract.totalObligated)}</TableCell>
+        <TableCell className={`text-right font-semibold whitespace-nowrap ${growthColor}`}>
           <span className="inline-flex items-center gap-1">
             +{contract.growthPercentage.toFixed(1)}%
             <ArrowUpRight className="size-3" />
@@ -684,29 +684,29 @@ export function PatternsView() {
                 <p className="text-xs font-medium text-muted-foreground mb-2">
                   Recent Q4 Contracts
                 </p>
-                <div className="max-h-40 overflow-y-auto overflow-x-auto">
-                  <Table>
+                <div className="max-h-40 overflow-y-auto">
+                  <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="h-8 text-[11px]">ID</TableHead>
+                        <TableHead className="h-8 text-[11px] w-[90px]">ID</TableHead>
                         <TableHead className="h-8 text-[11px]">Title</TableHead>
-                        <TableHead className="h-8 text-[11px] text-right">Value</TableHead>
-                        <TableHead className="h-8 text-[11px]">Date</TableHead>
+                        <TableHead className="h-8 text-[11px] text-right w-[80px]">Value</TableHead>
+                        <TableHead className="h-8 text-[11px] w-[80px]">Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {data.timingAnalysis.recentQ4Contracts.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-mono text-[11px] py-1">
+                          <TableCell className="font-mono text-[11px] py-1 truncate">
                             {c.contractId}
                           </TableCell>
-                          <TableCell className="text-[11px] py-1 max-w-[140px] truncate">
+                          <TableCell className="text-[11px] py-1 truncate">
                             {c.title}
                           </TableCell>
                           <TableCell className="text-[11px] py-1 text-right">
                             {formatShortCurrency(c.totalObligated)}
                           </TableCell>
-                          <TableCell className="text-[11px] py-1 text-muted-foreground">
+                          <TableCell className="text-[11px] py-1 text-muted-foreground whitespace-nowrap">
                             {new Date(c.awardDate).toLocaleDateString()}
                           </TableCell>
                         </TableRow>
@@ -759,17 +759,17 @@ export function PatternsView() {
               </div>
 
               {/* Scope Creep Table */}
-              <div className="max-h-96 overflow-y-auto overflow-x-auto">
-                <Table>
+              <div className="max-h-96 overflow-y-auto">
+                <Table className="table-fixed w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[100px]">Contract ID</TableHead>
-                      <TableHead className="max-w-[180px]">Title</TableHead>
-                      <TableHead className="text-right">Original</TableHead>
-                      <TableHead className="text-right">Current</TableHead>
-                      <TableHead className="text-right">Growth</TableHead>
-                      <TableHead className="text-center w-[60px]">Mods</TableHead>
-                      <TableHead className="w-10" />
+                      <TableHead className="w-[90px]">ID</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead className="text-right w-[90px]">Original</TableHead>
+                      <TableHead className="text-right w-[90px]">Current</TableHead>
+                      <TableHead className="text-right w-[70px]">Growth</TableHead>
+                      <TableHead className="text-center w-[50px]">Mods</TableHead>
+                      <TableHead className="w-8" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>

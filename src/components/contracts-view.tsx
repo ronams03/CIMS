@@ -350,20 +350,19 @@ function ContractsTableSkeleton() {
       {/* Table skeleton */}
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table className="w-full">
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px] min-w-0">ID</TableHead>
-                  <TableHead className="min-w-0">Title</TableHead>
-                  <TableHead className="hidden lg:table-cell min-w-0">Agency</TableHead>
-                  <TableHead className="hidden md:table-cell min-w-0">Contractor</TableHead>
-                  <TableHead className="hidden sm:table-cell min-w-0">Category</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
-                  <TableHead className="hidden xl:table-cell">Award Method</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="w-[80px]">ID</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead className="hidden lg:table-cell w-[120px]">Agency</TableHead>
+                  <TableHead className="hidden md:table-cell w-[130px]">Contractor</TableHead>
+                  <TableHead className="hidden sm:table-cell w-[80px]">Category</TableHead>
+                  <TableHead className="text-right w-[100px]">Value</TableHead>
+                  <TableHead className="hidden xl:table-cell w-[100px]">Method</TableHead>
+                  <TableHead className="hidden sm:table-cell w-[90px]">Status</TableHead>
                   <TableHead className="hidden lg:table-cell text-center w-[50px]">Mods</TableHead>
-                  <TableHead className="text-center w-[50px]">Risk</TableHead>
+                  <TableHead className="text-center w-[45px]">Risk</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -383,7 +382,6 @@ function ContractsTableSkeleton() {
                 ))}
               </TableBody>
             </Table>
-          </div>
         </CardContent>
       </Card>
 
@@ -1820,20 +1818,19 @@ export function ContractsView() {
       ) : (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table className="w-full">
+            <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px] min-w-0">ID</TableHead>
-                    <TableHead className="min-w-0">Title</TableHead>
-                    <TableHead className="hidden lg:table-cell min-w-0">Agency</TableHead>
-                    <TableHead className="hidden md:table-cell min-w-0">Contractor</TableHead>
-                    <TableHead className="hidden sm:table-cell min-w-0">Category</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Value</TableHead>
-                    <TableHead className="hidden xl:table-cell">Award Method</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead className="w-[80px]">ID</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead className="hidden lg:table-cell w-[120px]">Agency</TableHead>
+                    <TableHead className="hidden md:table-cell w-[130px]">Contractor</TableHead>
+                    <TableHead className="hidden sm:table-cell w-[80px]">Category</TableHead>
+                    <TableHead className="text-right w-[100px]">Value</TableHead>
+                    <TableHead className="hidden xl:table-cell w-[100px]">Method</TableHead>
+                    <TableHead className="hidden sm:table-cell w-[90px]">Status</TableHead>
                     <TableHead className="hidden lg:table-cell text-center w-[50px]">Mods</TableHead>
-                    <TableHead className="text-center w-[50px]">Risk</TableHead>
+                    <TableHead className="text-center w-[45px]">Risk</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1848,21 +1845,21 @@ export function ContractsView() {
                         className="cursor-pointer"
                         onClick={() => openDetail(contract)}
                       >
-                        <TableCell className="font-mono text-xs max-w-[100px] truncate" title={contract.contractId}>
+                        <TableCell className="font-mono text-xs truncate" title={contract.contractId}>
                           {contract.contractId}
                         </TableCell>
-                        <TableCell className="min-w-0">
-                          <span className="font-medium max-w-[180px] truncate block" title={contract.title}>
+                        <TableCell>
+                          <span className="font-medium truncate block" title={contract.title}>
                             {contract.title}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-muted-foreground text-sm min-w-0">
-                          <span className="max-w-[150px] truncate block" title={contract.agencyName}>
+                        <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
+                          <span className="truncate block" title={contract.agencyName}>
                             {contract.agencyName}
                           </span>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground text-sm min-w-0">
-                          <span className="max-w-[150px] truncate block" title={contract.primeContractorName}>
+                        <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                          <span className="truncate block" title={contract.primeContractorName}>
                             {contract.primeContractorName}
                           </span>
                         </TableCell>
@@ -1874,14 +1871,14 @@ export function ContractsView() {
                             {contract.category}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
+                        <TableCell className="text-right">
                           <div className="flex flex-col items-end">
-                            <span className="font-semibold">
+                            <span className="font-semibold whitespace-nowrap">
                               {formatShortCurrency(contract.totalObligated)}
                             </span>
                             {valuesDiffer && (
-                              <span className="text-xs text-muted-foreground">
-                                initial: {formatShortCurrency(contract.initialValue)}
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {formatShortCurrency(contract.initialValue)}
                               </span>
                             )}
                           </div>
@@ -1916,7 +1913,6 @@ export function ContractsView() {
                   })}
                 </TableBody>
               </Table>
-            </div>
           </CardContent>
         </Card>
       )}
