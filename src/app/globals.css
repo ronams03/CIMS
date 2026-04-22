@@ -120,3 +120,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide Next.js dev indicator */
+[data-nextjs-dialog-overlay],
+[data-nextjs-toast] {
+  display: none !important;
+}
+button[aria-label*="Next.js"] {
+  display: none !important;
+}
+aside[aria-label*="Next.js"] {
+  display: none !important;
+}
+nextjs-portal {
+  display: none !important;
+}
